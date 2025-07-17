@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: fichaje-bot
+    runtime: python
+    pythonVersion: 3.10.13
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: SHEET_NAME
+        sync: false
