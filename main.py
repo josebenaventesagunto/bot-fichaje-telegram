@@ -20,8 +20,10 @@ creds = ServiceAccountCredentials.from_json_keyfile_name(CREDS_FILE, SCOPE)
 client = gspread.authorize(creds)
 sheet = client.open(SHEET_NAME).sheet1
 
-# Configurar logging
-logging.basicConfig(level=logging.INFO)
+# Logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 
 async def fichar(update: Update, context: ContextTypes.DEFAULT_TYPE, accion: str):
     usuario = update.effective_user.full_name
@@ -39,13 +41,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 ¡Hola! Usa /entrar o /salir para fichar.")
 
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("entrar", entrar))
-    app.add_handler(CommandHandler("salir", salir))
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    print("✅ Bot funcionando en Render...")
-    app.run_polling()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("entrar", entrar))
+    application.add_handler(CommandHandler("salir", salir))
+
+    print("✅ Bot arrancando...")
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
