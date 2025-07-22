@@ -1,54 +1,35 @@
-import logging
 import os
-from datetime import datetime
-from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Cargar variables de entorno
-load_dotenv()
-
+# Configuración
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-SHEET_NAME = os.getenv("SHEET_NAME")
-
-# Configuración de Google Sheets
-SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+SHEET_NAME = os.getenv("SHEET_NAME", "fichajes")
 CREDS_FILE = "credenciales.json"
-creds = ServiceAccountCredentials.from_json_keyfile_name(CREDS_FILE, SCOPE)
+
+# Autenticación con Google Sheets
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name(CREDS_FILE, scope)
 client = gspread.authorize(creds)
 sheet = client.open(SHEET_NAME).sheet1
 
-# Logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+# Comando /fichar
+async def fichar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    nombre = f"{user.first_name or ''} {user.last_name or ''}".strip()
 
-async def fichar(update: Update, context: ContextTypes.DEFAULT_TYPE, accion: str):
-    usuario = update.effective_user.full_name
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet.append_row([timestamp, usuario, accion])
-    await update.message.reply_text(f"✅ Has fichado: {accion.upper()} a las {timestamp}")
+    sheet.append_row([timestamp, nombre])
+    await update.message.reply_text(f"✅ {nombre}, fichaje registrado a las {timestamp}")
 
-async def entrar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await fichar(update, context, "entrar")
-
-async def salir(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await fichar(update, context, "salir")
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 ¡Hola! Usa /entrar o /salir para fichar.")
-
+# Main
 def main():
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("entrar", entrar))
-    application.add_handler(CommandHandler("salir", salir))
-
-    print("✅ Bot arrancando...")
-    application.run_polling()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("fichar", fichar))
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
